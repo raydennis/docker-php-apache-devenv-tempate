@@ -1,18 +1,24 @@
 #!/bin/sh
 
+COLOR_REST="$(tput sgr0)"
+COLOR_GREEN="$(tput setaf 2)"
+COLOR_RED="$(tput setaf 1)"
+
 function service_info(){
     service=$1
     echo ""
-    echo -e "Testing service '\e[1m$service\e[0m'"
+    printf 'Testing service: ' 
+    printf '%s%s%s' $COLOR_GREEN $service $COLOR_REST
+    echo ""
     echo "======="
 }
 
 function assert_result(){
     if [[ "$1" == true ]];
     then
-        echo -e "\e[32;1mOK\e[0m"
+        printf '%s%s%s\n' $COLOR_GREEN 'OK' $COLOR_REST
     else
-        echo -e "\e[31;1mERROR\e[0m"
+        printf '%s%s%s\n' $COLOR_RED 'ERROR' $COLOR_REST
     fi;
 }
 
@@ -35,15 +41,6 @@ function test_host_docker_internal(){
     result=false
     echo "Checking 'host.docker.internal' on '${service}'"
     docker_exec ${service} dig host.docker.internal | grep -vq NXDOMAIN && result=true
-    assert_result ${result}
-}
-
-function test_request_nginx(){
-    url=$1
-    expected=$2
-    result=false
-    echo "Sending request to nginx via '$url' and expect to see '${expected}'"
-    curl -s ${url} | grep -q "${expected}" && result=true
     assert_result ${result}
 }
 
@@ -80,21 +77,26 @@ function test_php_module(){
     assert_result $result
 }
 
+function test_request_apache(){
+    url=$1
+    expected=$2
+    result=false
+    echo "Sending request to apache via '$url' and expect to see '${expected}'"
+    curl -s ${url} | grep -q "${expected}" && result=true
+    assert_result ${result}
+}
+
 service="workspace"
 service_info ${service}
 test_container_is_running ${service}
-test_php_version ${service} php 7.3
+test_php_version ${service} php 7.2
 test_php_modules ${service} php xdebug "Zend OPcache"
 test_host_docker_internal ${service}
 
-service="php-fpm"
+service="web"
 service_info ${service}
 test_container_is_running ${service}
-test_php_version ${service} php-fpm 7.3
+test_php_version ${service} php-fpm 7.2
 test_php_modules ${service} php-fpm xdebug "Zend OPcache"
 test_host_docker_internal ${service}
-
-service="nginx"
-service_info ${service}
-test_container_is_running ${service}
-test_request_nginx 127.0.0.1 "Hello world"
+test_request_apache "127.0.0.1/public/" "Laravel"
