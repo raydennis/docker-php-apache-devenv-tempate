@@ -6,7 +6,7 @@ networks:
 
 services:
   web:
-    image: php-apache-devenv/web
+    image: ${COMPOSE_PROJECT_NAME}/web
     build: 
         context: ../.
         dockerfile: '.docker/php-apache/Dockerfile'
@@ -19,7 +19,7 @@ services:
     ports:
         - "${apache_host_http_port}:80"
   workspace:
-    image: php-apache-devenv/workspace
+    image: ${COMPOSE_PROJECT_NAME}/workspace
     build: 
         context: ../.
         dockerfile: '.docker/workspace/Dockerfile'
@@ -28,5 +28,7 @@ services:
           - TARGET_PHP_VERSION=${PHP_VERSION}
           - TZ=${TIMEZONE}
     volumes:
-        - ../code:/var/www/html
+        - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}
         - /tmp:/tmp
+    ports:
+        - "8080:80"
